@@ -1,0 +1,91 @@
+---
+server:
+  install: '1'
+  packages: [vim, git, curl, wget, mysql-client, python-software-properties, language-pack-ja-base, language-pack-ja, sysv-rc-conf]
+  timezone: Asia/Tokyo
+  locale: ja_JP.UTF-8
+  language: ja_JP:ja
+
+apache:
+  install: '1'
+  docroot: /vagrant
+  servername: ubuntu-lamp.devel
+  modules: [rewrite, vhost_alias, headers, expires, filter, include]
+
+php:
+  install: '1'
+  ppa: php
+  phpv: php7.1
+  packages: [
+    libapache2-mod-php7.1,
+    php7.1-cli,
+    php7.1-mysql,
+    php7.1-mbstring,
+    php7.1-curl,
+    php7.1-gd,
+    php7.1-mcrypt,
+    php7.1-xml,
+    php7.1-xmlrpc,
+    php7.1-opcache,
+    php7.1-zip,
+    php7.1-common,
+    php7.1-apcu
+  ]
+  #extension.so用
+  #modules: [
+  #  mysql, mbstring, curl, mcrypt,, xmlrpc, zip
+  #]
+  #phpfpmを設定したい時は下記を有効化
+  #fpm: php7.1-fpm
+  dest_apache: /etc/php/7.1/apache2/php.ini
+  dest_cli: /etc/php/7.1/cli/php.ini
+  dest_fpm: /etc/php/7.1/fpm/php.ini
+  #開発用 prod用はinventoryを分けて作成すること
+  config_changes:
+  - regexp: '^;?(date.timezone) =.*'
+    line: '\1 = Asia/Tokyo'
+  - regexp: '^;?(mbstring.language) =.*'
+    line: '\1 = Japanese'
+  - regexp: '^;?(default_charset) =.*'
+    line: '\1 = "UTF-8"'
+  - regexp: '^;?(opcache.enable_cli =.*)'
+    line: '\1 = 1'
+  - regexp: '^(expose_php) = .*'
+    line: '\1 = Off'
+  - regexp: '^(allow_url_fopen) = .*'
+    line: '\1 = Off'
+  - regexp: '^(error_reporting) = .*'
+    line: '\1 = E_ALL'
+  - regexp: '^(display_errors) = .*'
+    line: '\1 = On'
+  - regexp: '^(session.sid_length) = .*'
+    line: '\1 = 32'
+  - regexp: '^(session.sid_bits_per_character) = .*'
+    line: '\1 = 5'
+  - regexp: '^(allow_url_fopen) = .*'
+    line: '\1 = On'
+
+mysql:
+  install: '1'
+  root_password: password
+  database: test
+  user: test_user
+  password: test_password
+  dump: ''
+  dest_mysqld_conf: /etc/mysql/mysql.conf.d/mysqld.cnf
+  dest_mysql_cnf: /etc/mysql/conf.d/mysql.cnf
+  dest_mysqldump_cnf: /etc/mysql/conf.d/mysqldump.cnf
+  config_changes_mysqld: [
+    character-set-server = utf8mb4,
+    default-storage-engine=InnoDB,
+    skip-character-set-client-handshake,
+    collation-server = utf8mb4_general_ci,
+    init-connect = SET NAMES utf8mb4
+  ]
+  config_changes_mysql: [
+    default-character-set=utf8mb4
+  ]
+
+
+composer:
+  install: '1'

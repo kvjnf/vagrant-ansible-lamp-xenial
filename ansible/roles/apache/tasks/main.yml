@@ -1,0 +1,39 @@
+---
+- name: apache2 | Install latest Apache2
+  become: true
+  apt: pkg=apache2 state=latest
+
+- shell: apache2 -v
+  register: apache_version
+
+- name: apache2 | Apache2.4系 Virtual hostの設定
+  become: true
+  template: src=vhost24.conf.tpl dest=/etc/apache2/sites-available/000-default.conf
+  notify: apache2 | Apache2再起動
+  when: apache_version.stdout.find('Apache/2.4.') != -1
+
+- name: apache2 | Apache2.2系 Virtual hostの設定
+  become: true
+  template: src=vhost22.conf.tpl dest=/etc/apache2/sites-available/000-default.conf
+  notify: apache2 | Apache2再起動
+  when: apache_version.stdout.find('Apache/2.2.') != -1
+
+- name: apache2 | Apacheモジュール類のインストール
+  apache2_module: state=present name={{ item }}
+  notify: apache2 | Apache2再起動
+  with_items:
+      - "{{ apache.modules }}"
+
+- name: apache2 | Apache文字コード設定
+  lineinfile: >
+    dest=/etc/apache2/conf-available/charset.conf
+    line='AddDefaultCharset off'
+
+- name: apache2 | security.confの更新
+  become: true
+  template: src=security.conf.tpl dest=/etc/apache2/conf-available/security.conf
+  notify: apache2 | Apache2再起動
+
+- name: apache2 | Apacheの自動起動
+  become: true
+  command: sysv-rc-conf apache2 on

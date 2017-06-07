@@ -1,0 +1,30 @@
+---
+- name: php-apache | Timezoneの設定
+  lineinfile: dest={{ php.dest_apache }}
+              regexp='date.timezone ='
+              line='date.timezone = {{ server.timezone }}'
+
+- name: php-apache | opcacheの有効化
+  lineinfile: dest={{ php.dest_apache }}
+              regexp=';?opcache.enable_cli=\d'
+              line='opcache.enable_cli=1'
+
+- name: php-apache | moduleソケットの追加
+  lineinfile:
+    dest: "{{ php.dest_apache }}"
+    line: "extension={{ item }}.so"
+  with_items:
+      - "{{ php.modules }}"
+  when: modules is defined
+
+- name: php-apache | php.iniの編集
+  lineinfile:
+    dest: "{{ php.dest_apache }}"
+    #正規表現内のバックスラッシュが使えるように
+    backrefs: yes
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items: "{{php.config_changes}}"
+
+- name: apache2 | Apacheの再起動
+  service: name=apache2 enabled=yes state=restarted

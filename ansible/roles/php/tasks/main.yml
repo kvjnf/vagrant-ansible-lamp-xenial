@@ -1,0 +1,32 @@
+---
+- name: php | ppaリポジトリの追加
+  become: true
+  apt_repository: repo=ppa:ondrej/{{ php.ppa }}
+
+- name: php | aptの更新
+  become: true
+  apt:
+      update_cache: yes
+      cache_valid_time: 86400 #一日
+
+- name: php | phpのインストール
+  become: true
+  apt: pkg={{ php.phpv }} state=latest
+
+- name: php | php-fpmのインストール
+  become: true
+  apt: pkg={{ php.fpm }} state=latest
+  when: php.fpm is defined
+
+- name: php | php packagesのインストール
+  become: true
+  apt: pkg={{ item }} state=latest
+  with_items:
+    - "{{ php.packages }}"
+  when: php.packages is defined
+
+- name: php | Remove old apt libraries
+  apt:
+    autoremove: yes
+
+- include: configure.yml

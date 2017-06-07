@@ -1,0 +1,25 @@
+---
+- name : aptitudeのインストール
+  become: true
+  apt: pkg=aptitude
+
+- name: aptの更新
+  become: true
+  apt:
+      upgrade: yes
+      update_cache: yes
+      cache_valid_time: 86400 #一日
+
+- name: System Packageのインストール
+  become: true
+  apt: pkg={{ item }} state=latest
+  with_items:
+      - "{{ server.packages }}"
+
+- name: Timezoneの設定
+  become: true
+  command: timedatectl set-timezone {{ server.timezone }}
+
+- name: ロケールと言語設定の変更
+  become: true
+  command: localectl set-locale LANG={{ server.locale }} LANGUAGE="{{ server.language }}"

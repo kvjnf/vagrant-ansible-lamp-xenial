@@ -1,0 +1,20 @@
+---
+- stat: path={{ php.dest_apache }}
+  register: modphp
+  when: php.fpm is undefined
+
+- stat: path={{ php.dest_fpm }}
+  register: phpfpm
+  when: php.fpm is defined
+
+- stat: path={{ php.dest_cli }}
+  register: phpcli
+
+- include: php-fpm.yml
+  when: phpfpm.stat.exists
+
+- include: php-cli.yml
+  when: phpcli.stat.exists
+
+- include: mod-php.yml
+  when: modphp.stat.exists

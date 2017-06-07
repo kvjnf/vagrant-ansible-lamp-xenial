@@ -1,0 +1,71 @@
+---
+# Retrieve the current hostname, because {{ ansible_hostname }} still contains the old name
+- shell: hostname
+  register: current_hostname
+
+- name: mysql | MYSQLパッケージのインストール
+  become: yes
+  apt: pkg={{ item }} state=latest
+  with_items:
+    - mysql-server
+    - mysql-client
+    - python-mysqldb
+
+- name: mysql | rootパスワードなどのアップデート
+  mysql_user: name=root host={{ item }} check_implicit_admin=yes password={{ mysql.root_password }} login_user=root login_password={{ mysql.root_password }}
+  with_items:
+    - "{{ current_hostname.stdout | lower }}"
+    - 127.0.0.1
+    - ::1
+    - localhost
+
+- name: mysql | mysqld.cnfの編集
+  lineinfile:
+    dest: "{{ mysql.dest_mysqld_conf }}"
+    insertafter: "^skip-external-locking"
+    line: "{{ item }}"
+  with_items:
+    - "{{ mysql.config_changes_mysqld }}"
+
+- name: mysql | mysql.cnfの編集
+  lineinfile:
+    dest: "{{ mysql.dest_mysql_cnf }}"
+    insertafter: '^[mysql]'
+    line: "{{ item }}"
+  with_items:
+    - "{{ mysql.config_changes_mysql }}"
+
+- name: mysql | mysqldump.cnfの編集
+  lineinfile:
+    dest: "{{ mysql.dest_mysqldump_cnf }}"
+    insertafter: '^[mysqldump]'
+    line: "{{ item }}"
+  with_items:
+    - "{{ mysql.config_changes_mysql }}"
+
+- name: mysql | DBの作成
+  mysql_db: name={{ mysql.database }} state=present login_user=root login_password={{ mysql.root_password }}
+
+- name: mysql | Usersの作成
+  mysql_user: name={{ mysql.user }} password={{ mysql.password }} priv={{ mysql.database }}.*:ALL state=present login_user=root login_password={{ mysql.root_password }}
+
+- name: mysql | Import dump
+  mysql_db: name={{ mysql.database }} state=import login_user=root login_password={{ mysql.root_password }} target=/vagrant/{{ mysql.dump }}
+  when: mysql.dump
+
+- name: mysql | anonymous usersの削除
+  mysql_user: name='' host={{ item }} state=absent login_user=root login_password={{ mysql.root_password }}
+  with_items:
+    - localhost
+    - "{{ current_hostname.stdout | lower }}"
+
+- name: mysql | testデータベースの削除
+  mysql_db: db=test state=absent login_user=root login_password={{ mysql.root_password }}
+
+- name: mysql | mysqldの自動起動
+  become: true
+  command: systemctl enable mysql
+
+- name: mysql | 再起動
+  become: true
+  command: systemctl restart mysql
