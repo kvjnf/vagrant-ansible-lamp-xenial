@@ -37,7 +37,8 @@ php:
   #  mysql, mbstring, curl, mcrypt,, xmlrpc, zip
   #]
   #phpfpmを設定したい時は下記を有効化
-  fpm: php7.1-fpm
+  #fpm: php7.1-fpm
+  
   fpm_cgi: php-fpm7.1
   dest_apache: /etc/php/7.1/apache2/php.ini
   dest_cli: /etc/php/7.1/cli/php.ini
