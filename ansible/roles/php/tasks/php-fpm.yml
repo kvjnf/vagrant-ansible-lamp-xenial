@@ -1,0 +1,62 @@
+---
+- name: php-fpm | Timezoneの設定
+  lineinfile:
+    dest: "{{ php.dest_fpm }}"
+    regexp: "date.timezone =.*"
+    line: "date.timezone = {{ server.timezone }}"
+
+- name: php-fpm | opcacheの有効化
+  lineinfile:
+    dest: "{{ php.dest_fpm }}"
+    regexp: ';?opcache.enable_cli=\d'
+    line: "opcache.enable_cli=1"
+
+- name: php-fpm | moduleソケットの追加
+  lineinfile:
+    dest: "{{ php.dest_fpm }}"
+    line: "extension={{ item }}.so"
+  with_items:
+      - "{{ php.modules }}"
+  when: modules is defined
+
+- name: php-fpm | php.iniの編集
+  lineinfile:
+    dest: "{{ php.dest_fpm }}"
+    #正規表現内のバックスラッシュが使えるように
+    backrefs: yes
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items: "{{ php.config_changes }}"
+
+- name: apache2 | fpm関連のモジュール有効化
+  apache2_module: state=present name={{ item }}
+  with_items:
+      - actions
+      - fastcgi
+      - alias
+
+- name: apache2 | fpm仕様に伴いモジュールの無効化
+  apache2_module: state=absent name={{ item }}
+  with_items:
+      - "{{ php.phpv }}"
+
+- name: php-fpm | fastcgi.confの書き換え
+  blockinfile:
+    path: "{{ php.dest_fastcgi_conf }}"
+    block: |
+      AddHandler {{ php.phpv }}-fcgi .php
+      Action {{ php.phpv }}-fcgi /{{ php.phpv }}-fcgi
+      Alias /{{ php.phpv }}-fcgi /usr/sbin/{{ php.fpm_cgi }}
+      FastCgiExternalServer /usr/sbin/{{ php.fpm_cgi }} -socket /var/run/php/{{ php.fpm }}.sock -pass-header Authorization
+      <Directory /usr/sbin>
+        <Files {{ php.fpm_cgi }}>
+         Require all granted
+        </Files>
+      </Directory>
+
+- name: php-fpm | php-fpm.confの用効果
+  become: true
+  command: a2enconf {{ php.phpv }}-fpm.conf
+
+- name: apache2 | Apacheの再起動
+  service: name=apache2 enabled=yes state=restarted

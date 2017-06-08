@@ -18,6 +18,7 @@ php:
   phpv: php7.1
   packages: [
     libapache2-mod-php7.1,
+    libapache2-mod-fastcgi, #php-fpmを利用したい場合
     php7.1-cli,
     php7.1-mysql,
     php7.1-mbstring,
@@ -36,10 +37,12 @@ php:
   #  mysql, mbstring, curl, mcrypt,, xmlrpc, zip
   #]
   #phpfpmを設定したい時は下記を有効化
-  #fpm: php7.1-fpm
+  fpm: php7.1-fpm
+  fpm_cgi: php-fpm7.1
   dest_apache: /etc/php/7.1/apache2/php.ini
   dest_cli: /etc/php/7.1/cli/php.ini
   dest_fpm: /etc/php/7.1/fpm/php.ini
+  dest_fastcgi_conf: /etc/apache2/mods-available/fastcgi.conf
   #開発用 prod用はinventoryを分けて作成すること
   config_changes:
   - regexp: '^;?(date.timezone) =.*'

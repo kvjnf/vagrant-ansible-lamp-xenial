@@ -1,13 +1,15 @@
 ---
 - name: php-cli | Timezoneの設定
-  lineinfile: dest={{ php.dest_cli }}
-              regexp='date.timezone ='
-              line='date.timezone = {{ server.timezone }}'
+  lineinfile:
+    dest: "{{ php.dest_cli }}"
+    regexp: "date.timezone =.*"
+    line: "date.timezone = {{ server.timezone }}"
 
 - name: php-cli | opcacheの有効化
-  lineinfile: dest={{ php.dest_cli }}
-              regexp=';?opcache.enable_cli=\d'
-              line='opcache.enable_cli=1'
+  lineinfile:
+    dest: "{{ php.dest_cli }}"
+    regexp: ';?opcache.enable_cli=\d'
+    line: "opcache.enable_cli=1"
 
 - name: php-cli | moduleソケットの追加
   lineinfile:

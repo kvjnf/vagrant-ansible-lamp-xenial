@@ -11,10 +11,10 @@
   register: phpcli
 
 - include: php-fpm.yml
-  when: phpfpm.stat.exists
+  when: php.fpm is defined and phpfpm.stat.exists
 
 - include: php-cli.yml
   when: phpcli.stat.exists
 
 - include: mod-php.yml
-  when: modphp.stat.exists
+  when: php.fpm is undefined and modphp.stat.exists
